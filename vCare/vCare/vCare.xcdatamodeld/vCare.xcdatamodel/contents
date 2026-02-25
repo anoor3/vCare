@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="21754" systemVersion="23D56" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
+    <entity name="CareEntryEntity" representedClassName="CareEntryEntity" syncable="YES">
+        <attribute name="date" optional="NO" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="energy" optional="NO" attributeType="Integer 16" defaultValueString="50" usesScalarValueType="YES"/>
+        <attribute name="id" optional="NO" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="medicationTaken" optional="NO" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="mood" optional="NO" attributeType="Integer 16" defaultValueString="3" usesScalarValueType="YES"/>
+        <attribute name="notes" optional="NO" attributeType="String" defaultValueString=""/>
+    </entity>
+    <entity name="MedicationEntity" representedClassName="MedicationEntity" syncable="YES">
+        <attribute name="dose" optional="NO" attributeType="String" defaultValueString=""/>
+        <attribute name="id" optional="NO" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="isTaken" optional="NO" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="name" optional="NO" attributeType="String" defaultValueString=""/>
+        <attribute name="section" optional="NO" attributeType="String" defaultValueString="morning"/>
+        <attribute name="time" optional="NO" attributeType="Date" usesScalarValueType="NO"/>
+    </entity>
+    <entity name="MedicationLogEntity" representedClassName="MedicationLogEntity" syncable="YES">
+        <attribute name="date" optional="NO" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" optional="NO" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="scheduleID" optional="NO" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="scheduledTime" optional="NO" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="status" optional="NO" attributeType="String" defaultValueString="upcoming"/>
+        <attribute name="takenAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="schedule" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MedicationScheduleEntity" inverseName="logs" inverseEntity="MedicationScheduleEntity"/>
+    </entity>
+    <entity name="MedicationScheduleEntity" representedClassName="MedicationScheduleEntity" syncable="YES">
+        <attribute name="colorTag" optional="YES" attributeType="String"/>
+        <attribute name="dose" optional="NO" attributeType="String" defaultValueString=""/>
+        <attribute name="endDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="frequencyType" optional="NO" attributeType="String" defaultValueString="daily"/>
+        <attribute name="id" optional="NO" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" optional="NO" attributeType="String" defaultValueString=""/>
+        <attribute name="notes" optional="YES" attributeType="String"/>
+        <attribute name="reminderEnabled" optional="NO" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="startDate" optional="NO" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="timesData" optional="NO" attributeType="Binary" allowsExternalBinaryDataStorage="YES"/>
+        <relationship name="logs" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="MedicationLogEntity" inverseName="schedule" inverseEntity="MedicationLogEntity"/>
+    </entity>
+    <elements>
+        <element name="CareEntryEntity" positionX="-63" positionY="-18" width="128" height="120"/>
+        <element name="MedicationEntity" positionX="142" positionY="-18" width="128" height="150"/>
+        <element name="MedicationLogEntity" positionX="-64" positionY="198" width="128" height="150"/>
+        <element name="MedicationScheduleEntity" positionX="147" positionY="203" width="128" height="165"/>
+    </elements>
+</model>
