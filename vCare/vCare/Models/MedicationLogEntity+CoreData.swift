@@ -20,5 +20,6 @@ extension MedicationLogEntity {
     @NSManaged public var scheduledTime: Date?
     @NSManaged public var status: String?
     @NSManaged public var takenAt: Date?
+    @NSManaged public var notificationID: String?
     @NSManaged public var schedule: MedicationScheduleEntity?
 }

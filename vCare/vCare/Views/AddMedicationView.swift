@@ -62,32 +62,7 @@ struct AddMedicationView: View {
                     .pickerStyle(.segmented)
                 }
 
-                Section(header: Text("Step 3 · Times"), footer: Text("Add the times you need reminders.")) {
-                    ForEach(times.indices, id: \.self) { index in
-                        HStack {
-                            DatePicker("Dose \(index + 1)", selection: Binding(get: {
-                                times[index]
-                            }, set: { times[index] = $0 }), displayedComponents: .hourAndMinute)
-                            .datePickerStyle(.compact)
-
-                            if times.count > 1 {
-                                Button(role: .destructive) {
-                                    withAnimation {
-                                        times.remove(at: index)
-                                    }
-                                } label: {
-                                    Image(systemName: "trash")
-                                }
-                            }
-                        }
-                    }
-
-                    Button {
-                        times.append(Date())
-                    } label: {
-                        Label("Add time", systemImage: "plus.circle")
-                    }
-                }
+                TimesSectionView(times: $times)
 
                 Section(header: Text("Step 4 · Reminders")) {
                     Toggle("Enable reminders", isOn: $reminderEnabled)
@@ -118,15 +93,7 @@ struct AddMedicationView: View {
                 }
             }
             .navigationTitle(schedule == nil ? "Add Medication" : "Edit Medication")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(schedule == nil ? "Save" : "Update", action: save)
-                        .disabled(!canSave)
-                }
-            }
+            .toolbar(content: toolbarContent)
         }
     }
 
@@ -136,19 +103,86 @@ struct AddMedicationView: View {
 
     private func save() {
         let sanitizedTimes = times.sorted()
+        let calendar = Calendar.current
+        let normalizedStart = calendar.startOfDay(for: startDate)
+        let normalizedEnd = includeEndDate ? calendar.startOfDay(for: endDate) : nil
         let schedule = MedicationSchedule(
             id: self.schedule?.id ?? UUID(),
             name: name.trimmingCharacters(in: .whitespaces),
             dose: dose.trimmingCharacters(in: .whitespaces),
             frequencyType: frequency,
             times: sanitizedTimes,
-            startDate: startDate,
-            endDate: includeEndDate ? endDate : nil,
+            startDate: normalizedStart,
+            endDate: normalizedEnd,
             notes: notes.isEmpty ? nil : notes,
             colorTag: colorTag,
             reminderEnabled: reminderEnabled
         )
         onSave(schedule)
         dismiss()
+    }
+
+    @ToolbarContentBuilder
+    private func toolbarContent() -> some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+            Button("Cancel") { dismiss() }
+        }
+        ToolbarItem(placement: .confirmationAction) {
+            Button(schedule == nil ? "Save" : "Update", action: save)
+                .disabled(!canSave)
+        }
+    }
+}
+
+private struct TimesSectionView: View {
+    @Binding var times: [Date]
+
+    var body: some View {
+        Section(header: Text("Step 3 · Times"), footer: Text("Add the times you need reminders.")) {
+            ForEach(times.indices, id: \.self) { index in
+                TimePickerRow(
+                    index: index,
+                    date: $times[index],
+                    canDelete: times.count > 1,
+                    onDelete: { removeTime(at: index) }
+                )
+            }
+
+            Button {
+                times.append(Date())
+            } label: {
+                Label("Add time", systemImage: "plus.circle")
+            }
+        }
+    }
+
+    private func removeTime(at index: Int) {
+        guard times.indices.contains(index) else { return }
+        withAnimation {
+            times.remove(at: index)
+            if times.isEmpty {
+                times.append(Date())
+            }
+        }
+    }
+}
+
+private struct TimePickerRow: View {
+    let index: Int
+    var date: Binding<Date>
+    var canDelete: Bool
+    var onDelete: () -> Void
+
+    var body: some View {
+        HStack {
+            DatePicker("Dose \(index + 1)", selection: date, displayedComponents: .hourAndMinute)
+                .datePickerStyle(.compact)
+
+            if canDelete {
+                Button(role: .destructive, action: onDelete) {
+                    Image(systemName: "trash")
+                }
+            }
+        }
     }
 }

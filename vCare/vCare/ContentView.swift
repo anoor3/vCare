@@ -12,16 +12,17 @@ enum AppTab: Hashable {
     case medications
     case insights
     case reset
+    case settings
 }
 
 struct ContentView: View {
     @Environment(\.managedObjectContext) private var context
-    @State private var selectedTab: AppTab = .home
+    @StateObject private var appState = AppState.shared
 
     var body: some View {
-        TabView(selection: $selectedTab) {
+        TabView(selection: $appState.selectedTab) {
             NavigationStack {
-                HomeView(context: context, selectedTab: $selectedTab)
+                HomeView(context: context, selectedTab: $appState.selectedTab)
             }
             .tabItem {
                 Label("Home", systemImage: "house.fill")
@@ -29,7 +30,7 @@ struct ContentView: View {
             .tag(AppTab.home)
 
             NavigationStack {
-                MedicationView(context: context)
+                MedicationsView(context: context)
             }
             .tabItem {
                 Label("Medications", systemImage: "pills.fill")
@@ -51,6 +52,19 @@ struct ContentView: View {
                 Label("Calm", systemImage: "wind")
             }
             .tag(AppTab.reset)
+
+            if AppFeatures.familyPortalEnabled {
+                NavigationStack {
+                    SettingsView()
+                }
+                .tabItem {
+                    Label("Settings", systemImage: "gearshape")
+                }
+                .tag(AppTab.settings)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .medicationDeepLink)) { _ in
+            appState.selectedTab = .medications
         }
         .preferredColorScheme(.light)
     }

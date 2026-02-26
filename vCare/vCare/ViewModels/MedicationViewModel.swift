@@ -3,6 +3,7 @@
 //  vCare
 //
 
+import Combine
 import CoreData
 import Foundation
 
@@ -10,23 +11,49 @@ import Foundation
 final class MedicationViewModel: ObservableObject {
     @Published private(set) var schedules: [MedicationSchedule] = []
     @Published private(set) var logs: [MedicationLog] = []
+    @Published private(set) var countdownText: String = "--"
+    @Published private(set) var nextDoseUrgency: NextDoseUrgency = .normal
 
     private let context: NSManagedObjectContext
+    private let notificationManager = NotificationManager.shared
+    private var timerCancellable: AnyCancellable?
+    private var actionCancellable: AnyCancellable?
+    private var currentDayStart: Date = Calendar.current.startOfDay(for: Date())
 
     init(context: NSManagedObjectContext) {
         self.context = context
+        notificationManager.requestAuthorization()
+        notificationManager.scheduleDailySummary()
+        actionCancellable = NotificationCenter.default.publisher(for: .medicationAction)
+            .compactMap { $0.object as? String }
+            .compactMap { UUID(uuidString: $0) }
+            .sink { [weak self] id in
+                self?.markTaken(logID: id)
+            }
         refresh()
+        refreshCountdownTimer()
+    }
+
+    deinit {
+        timerCancellable?.cancel()
+        actionCancellable?.cancel()
     }
 
     func refresh() {
         fetchSchedulesAndLogs()
-        generateDailyLogsIfNeeded()
+        generateTodayLogsIfNeeded()
         autoMarkMissedLogs()
         fetchSchedulesAndLogs()
+        scheduleNotificationsForToday()
+        updateCountdownText()
     }
 
     var todayLogs: [MedicationLog] {
         logs.filter { Calendar.current.isDateInToday($0.date) }
+    }
+
+    var todayLogsSorted: [MedicationLog] {
+        todayLogs.sorted { $0.scheduledTime < $1.scheduledTime }
     }
 
     var upcomingLogs: [MedicationLog] {
@@ -41,29 +68,77 @@ final class MedicationViewModel: ObservableObject {
         todayLogs.filter { $0.status == .missed }.count
     }
 
+    var upcomingCount: Int {
+        todayLogs.filter { $0.status == .upcoming }.count
+    }
+
     var adherencePercentage: Double {
         let relevant = todayLogs.filter { $0.status != .skipped }
         guard !relevant.isEmpty else { return 0 }
         return Double(takenCount) / Double(relevant.count)
     }
 
-    var nextMedication: MedicationLog? {
+    var progressFraction: Double { adherencePercentage }
+
+    var nextDose: MedicationLog? {
         upcomingLogs.first
+    }
+
+    func generateTodayLogsIfNeeded() {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        currentDayStart = today
+
+        for schedule in schedules {
+            guard schedule.startDate <= today, schedule.endDate == nil || schedule.endDate! >= today else { continue }
+            for time in schedule.times {
+                guard let scheduledTime = combine(date: today, with: time) else { continue }
+                if !logs.contains(where: { log in
+                    log.scheduleID == schedule.id && calendar.isDate(log.date, inSameDayAs: today) && abs(log.scheduledTime.timeIntervalSince(scheduledTime)) < 60
+                }) {
+                    let entity = MedicationLogEntity(context: context)
+                    let identifier = UUID()
+                    entity.id = identifier
+                    entity.scheduleID = schedule.id
+                    entity.date = today
+                    entity.scheduledTime = scheduledTime
+                    entity.status = MedicationLogStatus.upcoming.rawValue
+                    entity.schedule = fetchScheduleEntity(by: schedule.id)
+                    entity.notificationID = identifier.uuidString
+                }
+            }
+        }
+
+        if context.hasChanges {
+            do { try context.save() } catch { print("Failed to generate logs: \(error)") }
+        }
     }
 
     func autoMarkMissedLogs() {
         let request = MedicationLogEntity.fetchRequest()
-        request.predicate = NSPredicate(format: "status == %@ AND scheduledTime < %@", MedicationLogStatus.upcoming.rawValue, Date() as NSDate)
         do {
             let entities = try context.fetch(request)
-            entities.forEach { entity in
-                entity.status = MedicationLogStatus.missed.rawValue
+            let now = Date()
+            var didChange = false
+            for entity in entities {
+                let previousStatus = MedicationLogStatus(rawValue: entity.status ?? "") ?? .upcoming
+                let newStatus = determineStatus(for: entity, now: now)
+                if entity.status != newStatus.rawValue {
+                    entity.status = newStatus.rawValue
+                    didChange = true
+                    if newStatus == .missed && previousStatus != .missed {
+                        createCareAlertIfNeeded(for: entity)
+                        if let id = entity.id, #available(iOS 16.1, *) {
+                            NextDoseLiveActivityManager.shared.update(logID: id, status: .overdue)
+                        }
+                    }
+                }
             }
-            if context.hasChanges {
+            if didChange {
                 try context.save()
             }
         } catch {
-            print("Failed to mark missed logs: \(error)")
+            print("Failed to update statuses: \(error)")
         }
     }
 
@@ -75,31 +150,20 @@ final class MedicationViewModel: ObservableObject {
         updateLog(logID: logID, newStatus: .skipped, takenAt: nil)
     }
 
-    func generateDailyLogsIfNeeded() {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
+    func updateStatusesOnAppear() {
+        handleDayChange()
+        autoMarkMissedLogs()
+        fetchSchedulesAndLogs()
+        updateCountdownText()
+    }
 
-        for schedule in schedules {
-            guard schedule.startDate <= today, schedule.endDate == nil || schedule.endDate! >= today else { continue }
-            for time in schedule.times {
-                guard let scheduledTime = combine(date: today, with: time) else { continue }
-                if !logs.contains(where: { log in
-                    log.scheduleID == schedule.id && calendar.isDate(log.date, inSameDayAs: today) && abs(log.scheduledTime.timeIntervalSince(scheduledTime)) < 60
-                }) {
-                    let entity = MedicationLogEntity(context: context)
-                    entity.id = UUID()
-                    entity.scheduleID = schedule.id
-                    entity.date = today
-                    entity.scheduledTime = scheduledTime
-                    entity.status = MedicationLogStatus.upcoming.rawValue
-                    entity.schedule = fetchScheduleEntity(by: schedule.id)
-                }
+    func refreshCountdownTimer() {
+        timerCancellable?.cancel()
+        timerCancellable = Timer.publish(every: 60, tolerance: 5, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
+                self?.updateStatusesOnAppear()
             }
-        }
-
-        if context.hasChanges {
-            do { try context.save() } catch { print("Failed to generate logs: \(error)") }
-        }
     }
 
     func saveSchedule(_ schedule: MedicationSchedule) {
@@ -109,8 +173,7 @@ final class MedicationViewModel: ObservableObject {
         do {
             try context.save()
             deleteLogsForToday(scheduleID: schedule.id)
-            generateDailyLogsIfNeeded()
-            fetchSchedulesAndLogs()
+            refresh()
         } catch {
             print("Failed to save schedule: \(error)")
         }
@@ -121,7 +184,7 @@ final class MedicationViewModel: ObservableObject {
         context.delete(entity)
         do {
             try context.save()
-            fetchSchedulesAndLogs()
+            refresh()
         } catch {
             print("Failed to delete schedule: \(error)")
         }
@@ -136,10 +199,12 @@ final class MedicationViewModel: ObservableObject {
             let logRequest = MedicationLogEntity.fetchRequest()
             logRequest.sortDescriptors = [NSSortDescriptor(keyPath: \MedicationLogEntity.scheduledTime, ascending: true)]
             let logEntities = try context.fetch(logRequest)
-            let scheduleDict = Dictionary(uniqueKeysWithValues: schedules.map { ($0.id, $0) })
+            let scheduleLookup = Dictionary(uniqueKeysWithValues: schedules.map { ($0.id, $0) })
+            let now = Date()
             self.logs = logEntities.map { entity in
                 var log = MedicationLog(entity: entity)
-                log.schedule = scheduleDict[log.scheduleID]
+                log.schedule = scheduleLookup[log.scheduleID]
+                log.status = determineStatus(for: entity, now: now)
                 return log
             }
         } catch {
@@ -160,10 +225,28 @@ final class MedicationViewModel: ObservableObject {
         request.fetchLimit = 1
         do {
             guard let entity = try context.fetch(request).first else { return }
+            let currentStatus = determineStatus(for: entity, now: Date())
+            guard currentStatus != .taken else { return }
+            if newStatus == .taken && entity.takenAt != nil { return }
             entity.status = newStatus.rawValue
             entity.takenAt = takenAt
             try context.save()
+            let log = MedicationLog(entity: entity)
+            notificationManager.cancelNotification(for: log)
+            if newStatus == .missed {
+                createCareAlertIfNeeded(for: entity)
+            }
+            if #available(iOS 16.1, *) {
+                let liveStatus: NextDoseLiveActivityStatus
+                switch newStatus {
+                case .taken: liveStatus = .taken
+                case .missed: liveStatus = .overdue
+                default: liveStatus = .upcoming
+                }
+                NextDoseLiveActivityManager.shared.update(logID: logID, status: liveStatus)
+            }
             fetchSchedulesAndLogs()
+            updateCountdownText()
         } catch {
             print("Failed to update log: \(error)")
         }
@@ -194,4 +277,74 @@ final class MedicationViewModel: ObservableObject {
             print("Failed to delete logs: \(error)")
         }
     }
+
+    private func scheduleNotificationsForToday() {
+        todayLogs.forEach { log in
+            guard log.schedule?.reminderEnabled ?? true else { return }
+            guard log.takenAt == nil else {
+                notificationManager.cancelNotification(for: log)
+                return
+            }
+            if log.scheduledTime < Date().addingTimeInterval(-120) { return }
+            notificationManager.cancelNotification(for: log)
+            notificationManager.schedulePrimaryReminder(for: log)
+            notificationManager.scheduleMissedFollowUp(for: log)
+        }
+    }
+
+    private func updateCountdownText() {
+        guard let next = nextDose else {
+            countdownText = "--"
+            nextDoseUrgency = .normal
+            return
+        }
+        let now = Date()
+        let interval = next.scheduledTime.timeIntervalSince(now)
+        if interval <= 0 {
+            countdownText = "Overdue"
+            nextDoseUrgency = .overdue
+            return
+        }
+        let minutes = Int(interval / 60)
+        if minutes < 60 {
+            countdownText = "In \(max(minutes, 1)) min"
+        } else {
+            countdownText = "In \(minutes / 60)h \(minutes % 60)m"
+        }
+        if minutes < 30 {
+            nextDoseUrgency = .warning
+        } else {
+            nextDoseUrgency = .normal
+        }
+        if #available(iOS 16.1, *) {
+            NextDoseLiveActivityManager.shared.refresh(using: nextDose)
+        }
+    }
+
+    private func determineStatus(for entity: MedicationLogEntity, now: Date) -> MedicationLogStatus {
+        if entity.takenAt != nil {
+            return .taken
+        }
+        guard let scheduled = entity.scheduledTime else { return .upcoming }
+        return scheduled > now ? .upcoming : .missed
+    }
+
+    private func handleDayChange() {
+        let today = Calendar.current.startOfDay(for: Date())
+        guard today > currentDayStart else { return }
+        currentDayStart = today
+        generateTodayLogsIfNeeded()
+        fetchSchedulesAndLogs()
+        scheduleNotificationsForToday()
+    }
+
+    private func createCareAlertIfNeeded(for entity: MedicationLogEntity) {
+        // Placeholder: cloud sync disabled
+    }
+}
+
+enum NextDoseUrgency {
+    case normal
+    case warning
+    case overdue
 }

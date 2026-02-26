@@ -34,15 +34,17 @@ struct MedicationLog: Identifiable {
     var scheduledTime: Date
     var status: MedicationLogStatus
     var takenAt: Date?
+    var notificationID: String?
     var schedule: MedicationSchedule?
 
-    init(id: UUID = UUID(), scheduleID: UUID, date: Date, scheduledTime: Date, status: MedicationLogStatus = .upcoming, takenAt: Date? = nil, schedule: MedicationSchedule? = nil) {
+    init(id: UUID = UUID(), scheduleID: UUID, date: Date, scheduledTime: Date, status: MedicationLogStatus = .upcoming, takenAt: Date? = nil, notificationID: String? = nil, schedule: MedicationSchedule? = nil) {
         self.id = id
         self.scheduleID = scheduleID
         self.date = date
         self.scheduledTime = scheduledTime
         self.status = status
         self.takenAt = takenAt
+        self.notificationID = notificationID
         self.schedule = schedule
     }
 
@@ -53,6 +55,7 @@ struct MedicationLog: Identifiable {
         self.scheduledTime = entity.scheduledTime ?? Date()
         self.status = MedicationLogStatus(rawValue: entity.status ?? "upcoming") ?? .upcoming
         self.takenAt = entity.takenAt
+        self.notificationID = entity.notificationID
         if let scheduleEntity = entity.schedule {
             self.schedule = MedicationSchedule(entity: scheduleEntity)
         } else {
@@ -67,5 +70,6 @@ struct MedicationLog: Identifiable {
         entity.scheduledTime = scheduledTime
         entity.status = status.rawValue
         entity.takenAt = takenAt
+        entity.notificationID = notificationID
     }
 }

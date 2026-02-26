@@ -19,6 +19,7 @@
     <entity name="MedicationLogEntity" representedClassName="MedicationLogEntity" syncable="YES">
         <attribute name="date" optional="NO" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="id" optional="NO" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="notificationID" optional="YES" attributeType="String"/>
         <attribute name="scheduleID" optional="NO" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="scheduledTime" optional="NO" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="status" optional="NO" attributeType="String" defaultValueString="upcoming"/>
