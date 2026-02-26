@@ -150,6 +150,10 @@ final class MedicationViewModel: ObservableObject {
         updateLog(logID: logID, newStatus: .skipped, takenAt: nil)
     }
 
+    func markAsUpcoming(logID: UUID) {
+        updateLog(logID: logID, newStatus: .upcoming, takenAt: nil, allowRevertingTaken: true)
+    }
+
     func updateStatusesOnAppear() {
         handleDayChange()
         autoMarkMissedLogs()
@@ -219,20 +223,24 @@ final class MedicationViewModel: ObservableObject {
         return try? context.fetch(request).first
     }
 
-    private func updateLog(logID: UUID, newStatus: MedicationLogStatus, takenAt: Date?) {
+    private func updateLog(logID: UUID, newStatus: MedicationLogStatus, takenAt: Date?, allowRevertingTaken: Bool = false) {
         let request = MedicationLogEntity.fetchRequest()
         request.predicate = NSPredicate(format: "id == %@", logID as CVarArg)
         request.fetchLimit = 1
         do {
             guard let entity = try context.fetch(request).first else { return }
             let currentStatus = determineStatus(for: entity, now: Date())
-            guard currentStatus != .taken else { return }
+            if !allowRevertingTaken && currentStatus == .taken && newStatus != .taken { return }
             if newStatus == .taken && entity.takenAt != nil { return }
             entity.status = newStatus.rawValue
             entity.takenAt = takenAt
             try context.save()
             let log = MedicationLog(entity: entity)
             notificationManager.cancelNotification(for: log)
+            if newStatus == .upcoming {
+                notificationManager.schedulePrimaryReminder(for: log)
+                notificationManager.scheduleMissedFollowUp(for: log)
+            }
             if newStatus == .missed {
                 createCareAlertIfNeeded(for: entity)
             }
@@ -322,6 +330,9 @@ final class MedicationViewModel: ObservableObject {
     }
 
     private func determineStatus(for entity: MedicationLogEntity, now: Date) -> MedicationLogStatus {
+        if entity.status == MedicationLogStatus.skipped.rawValue {
+            return .skipped
+        }
         if entity.takenAt != nil {
             return .taken
         }

@@ -23,6 +23,8 @@ extension MedicationScheduleEntity {
     @NSManaged public var endDate: Date?
     @NSManaged public var notes: String?
     @NSManaged public var colorTag: String?
+    @NSManaged public var iconSymbol: String?
+    @NSManaged public var photoData: Data?
     @NSManaged public var reminderEnabled: Bool
     @NSManaged public var logs: NSSet?
 }
