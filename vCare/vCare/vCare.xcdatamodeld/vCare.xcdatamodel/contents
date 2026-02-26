@@ -28,8 +28,6 @@
     </entity>
     <entity name="MedicationScheduleEntity" representedClassName="MedicationScheduleEntity" syncable="YES">
         <attribute name="colorTag" optional="YES" attributeType="String"/>
-        <attribute name="iconSymbol" optional="YES" attributeType="String"/>
-        <attribute name="photoData" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES"/>
         <attribute name="dose" optional="NO" attributeType="String" defaultValueString=""/>
         <attribute name="endDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="frequencyType" optional="NO" attributeType="String" defaultValueString="daily"/>

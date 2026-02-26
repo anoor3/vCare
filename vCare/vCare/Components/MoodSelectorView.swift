@@ -1,7 +1,3 @@
-//
-//  MoodSelectorView.swift
-//  vCare
-//
 
 import SwiftUI
 

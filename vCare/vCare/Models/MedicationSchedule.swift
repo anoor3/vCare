@@ -1,7 +1,3 @@
-//
-//  MedicationSchedule.swift
-//  vCare
-//
 
 import Foundation
 
@@ -31,10 +27,8 @@ struct MedicationSchedule: Identifiable {
     var notes: String?
     var colorTag: String?
     var reminderEnabled: Bool
-    var iconSymbol: String?
-    var photoData: Data?
 
-    init(id: UUID = UUID(), name: String, dose: String, frequencyType: MedicationFrequencyType, times: [Date], startDate: Date, endDate: Date? = nil, notes: String? = nil, colorTag: String? = nil, reminderEnabled: Bool = true, iconSymbol: String? = nil, photoData: Data? = nil) {
+    init(id: UUID = UUID(), name: String, dose: String, frequencyType: MedicationFrequencyType, times: [Date], startDate: Date, endDate: Date? = nil, notes: String? = nil, colorTag: String? = nil, reminderEnabled: Bool = true) {
         self.id = id
         self.name = name
         self.dose = dose
@@ -45,8 +39,6 @@ struct MedicationSchedule: Identifiable {
         self.notes = notes
         self.colorTag = colorTag
         self.reminderEnabled = reminderEnabled
-        self.iconSymbol = iconSymbol
-        self.photoData = photoData
     }
 
     init(entity: MedicationScheduleEntity) {
@@ -60,8 +52,6 @@ struct MedicationSchedule: Identifiable {
         self.notes = entity.notes
         self.colorTag = entity.colorTag
         self.reminderEnabled = entity.reminderEnabled
-        self.iconSymbol = entity.iconSymbol
-        self.photoData = entity.photoData
     }
 
     func apply(to entity: MedicationScheduleEntity) {
@@ -75,7 +65,5 @@ struct MedicationSchedule: Identifiable {
         entity.notes = notes
         entity.colorTag = colorTag
         entity.reminderEnabled = reminderEnabled
-        entity.iconSymbol = iconSymbol
-        entity.photoData = photoData
     }
 }

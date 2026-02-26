@@ -1,7 +1,3 @@
-//
-//  QuickActionsView.swift
-//  vCare
-//
 
 import SwiftUI
 

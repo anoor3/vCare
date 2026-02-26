@@ -1,7 +1,3 @@
-//
-//  MedicationLog.swift
-//  vCare
-//
 
 import Foundation
 

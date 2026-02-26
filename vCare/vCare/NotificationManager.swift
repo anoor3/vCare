@@ -1,7 +1,3 @@
-//
-//  NotificationManager.swift
-//  vCare
-//
 
 import Foundation
 import UserNotifications

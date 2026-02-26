@@ -1,7 +1,3 @@
-//
-//  ResetView.swift
-//  vCare
-//
 
 import SwiftUI
 

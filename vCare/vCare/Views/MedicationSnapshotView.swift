@@ -1,7 +1,3 @@
-//
-//  MedicationSnapshotView.swift
-//  vCare
-//
 
 import SwiftUI
 

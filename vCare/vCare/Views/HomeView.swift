@@ -1,7 +1,3 @@
-//
-//  HomeView.swift
-//  vCare
-//
 
 import CoreData
 import SwiftUI

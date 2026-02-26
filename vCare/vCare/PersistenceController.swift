@@ -1,7 +1,3 @@
-//
-//  PersistenceController.swift
-//  vCare
-//
 
 import CoreData
 

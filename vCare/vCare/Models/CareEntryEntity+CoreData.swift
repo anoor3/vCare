@@ -1,7 +1,3 @@
-//
-//  CareEntryEntity+CoreData.swift
-//  vCare
-//
 
 import CoreData
 

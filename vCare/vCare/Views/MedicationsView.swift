@@ -1,11 +1,6 @@
-//
-//  MedicationView.swift
-//  vCare
-//
 
 import CoreData
 import SwiftUI
-import UIKit
 
 struct MedicationsView: View {
     @StateObject private var viewModel: MedicationViewModel
@@ -14,7 +9,6 @@ struct MedicationsView: View {
     @State private var editingSchedule: MedicationSchedule?
     @State private var showSchedule = false
     @State private var highlightedLogID: UUID?
-    @State private var scheduleToDelete: MedicationSchedule?
 
     init(context: NSManagedObjectContext) {
         _viewModel = StateObject(wrappedValue: MedicationViewModel(context: context))
@@ -34,12 +28,6 @@ struct MedicationsView: View {
                         missed: viewModel.missedCount,
                         upcoming: viewModel.upcomingCount
                     )
-
-                    if viewModel.schedules.isEmpty {
-                        emptySchedulePrompt
-                    } else {
-                        scheduleManagementSection
-                    }
 
                 if AppFeatures.familyPortalEnabled,
                    appState.role == .caregiverPortal,
@@ -66,39 +54,22 @@ struct MedicationsView: View {
                                         withAnimation(.easeInOut) {
                                             viewModel.markTaken(logID: log.id)
                                         }
-                                    }, onUndo: {
-                                        withAnimation(.easeInOut) {
-                                            viewModel.markAsUpcoming(logID: log.id)
-                                        }
                                     }, isHighlighted: highlightedLogID == log.id)
                                     .id(log.id)
                                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                        if log.status == .upcoming || log.status == .missed {
-                                            Button {
-                                                viewModel.markTaken(logID: log.id)
-                                            } label: {
-                                                Label("Taken", systemImage: "checkmark")
-                                            }
-                                            .tint(.green)
+                                        Button {
+                                            viewModel.markTaken(logID: log.id)
+                                        } label: {
+                                            Label("Taken", systemImage: "checkmark")
                                         }
+                                        .tint(.green)
 
-                                        if log.status == .upcoming {
-                                            Button {
-                                                viewModel.markSkipped(logID: log.id)
-                                            } label: {
-                                                Label("Skip", systemImage: "forward.end")
-                                            }
-                                            .tint(.orange)
+                                        Button {
+                                            viewModel.markSkipped(logID: log.id)
+                                        } label: {
+                                            Label("Skip", systemImage: "forward.end")
                                         }
-
-                                        if log.status == .taken || log.status == .skipped {
-                                            Button {
-                                                viewModel.markAsUpcoming(logID: log.id)
-                                            } label: {
-                                                Label("Undo", systemImage: "arrow.uturn.backward")
-                                            }
-                                            .tint(.gray)
-                                        }
+                                        .tint(.orange)
                                     }
                                 }
                             }
@@ -157,137 +128,7 @@ struct MedicationsView: View {
                 viewModel.saveSchedule(schedule)
             }
         }
-        .onAppear {
-            viewModel.updateStatusesOnAppear()
-            showSchedule = viewModel.nextDose == nil
-        }
-        .onChange(of: viewModel.nextDose?.id) { newValue in
-            if newValue == nil {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                    showSchedule = true
-                }
-            }
-        }
-        .confirmationDialog("Delete medication?", item: $scheduleToDelete) { schedule in
-            Button("Delete \(schedule.name)", role: .destructive) {
-                viewModel.deleteSchedule(schedule)
-            }
-            Button("Cancel", role: .cancel) { scheduleToDelete = nil }
-        }
-    }
-
-    private var emptySchedulePrompt: some View {
-        VStack(spacing: 12) {
-            Text("No medications saved")
-                .font(.headline)
-            Text("Add a medication schedule to start tracking doses.")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-            Button {
-                editingSchedule = nil
-                showAddMedication = true
-            } label: {
-                Label("Add Medication", systemImage: "plus")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.accentColor.opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(20)
-        .frame(maxWidth: .infinity)
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .shadow(color: Color.black.opacity(0.04), radius: 10, y: 6)
-    }
-
-    private var scheduleManagementSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Your Medications")
-                    .font(.headline)
-                Spacer()
-                Button {
-                    editingSchedule = nil
-                    showAddMedication = true
-                } label: {
-                    Label("Add", systemImage: "plus")
-                }
-            }
-
-            ForEach(viewModel.schedules) { schedule in
-                scheduleRow(for: schedule)
-            }
-        }
-        .padding(20)
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .shadow(color: Color.black.opacity(0.05), radius: 10, y: 6)
-    }
-
-    private func scheduleRow(for schedule: MedicationSchedule) -> some View {
-        HStack(alignment: .center, spacing: 12) {
-            scheduleBadge(for: schedule)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(schedule.name)
-                    .font(.subheadline).bold()
-                Text(schedule.dose)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                Text(formattedTimes(for: schedule))
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-            }
-            Spacer()
-            Menu {
-                Button("Edit") {
-                    editingSchedule = schedule
-                    showAddMedication = true
-                }
-                Button("Delete", role: .destructive) {
-                    scheduleToDelete = schedule
-                }
-            } label: {
-                Image(systemName: "ellipsis.circle")
-                    .font(.title3)
-                    .foregroundColor(.secondary)
-            }
-        }
-        .padding(.vertical, 8)
-    }
-
-    private func scheduleBadge(for schedule: MedicationSchedule) -> some View {
-        Group {
-            if let data = schedule.photoData, let image = UIImage(data: data) {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
-            } else if let symbol = schedule.iconSymbol {
-                Image(systemName: symbol)
-                    .font(.title3)
-                    .foregroundColor(.accentColor)
-            } else {
-                let letter = schedule.name.first.map { String($0).uppercased() } ?? "M"
-                Text(letter)
-                    .font(.subheadline).bold()
-                    .foregroundColor(.accentColor)
-            }
-        }
-        .frame(width: 40, height: 40)
-        .background(schedule.photoData == nil ? Color(.secondarySystemBackground) : Color.clear)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-
-    private func formattedTimes(for schedule: MedicationSchedule) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .none
-        formatter.timeStyle = .short
-        let times = schedule.times.sorted().map { formatter.string(from: $0) }
-        if times.isEmpty { return "No times scheduled" }
-        return times.joined(separator: ", ")
+        .onAppear { viewModel.updateStatusesOnAppear() }
     }
 
     private func portalMedicationsContent(snapshot: CareShareProfileDTO) -> some View {
@@ -316,15 +157,15 @@ struct MedicationsView: View {
                             .font(.subheadline).bold()
                         Text(DateFormatter.localizedString(from: log.scheduledTime, dateStyle: .none, timeStyle: .short))
                             .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text(statusText(for: log))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
-                    .background(Color(.systemBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .foregroundColor(.secondary)
+                    Text(statusText(for: log))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .background(Color(.systemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
             }
         }

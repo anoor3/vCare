@@ -14,17 +14,11 @@ struct NextDoseCardView: View {
             Text("Next Dose")
                 .font(.caption)
                 .foregroundColor(.secondary)
-
-            HStack(alignment: .center, spacing: 12) {
-                iconBadge
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(log.schedule?.name ?? "Medication")
-                        .font(.title3).bold()
-                    Text(log.schedule?.dose ?? "")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-            }
+            Text(log.schedule?.name ?? "Medication")
+                .font(.title3).bold()
+            Text(log.schedule?.dose ?? "")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
 
             HStack {
                 Label(log.scheduledTime.formatted(date: .omitted, time: .shortened), systemImage: "clock")
@@ -61,36 +55,6 @@ struct NextDoseCardView: View {
         .shadow(color: Color.black.opacity(0.08), radius: 14, y: 8)
     }
 
-    private var iconBadge: some View {
-        Group {
-            if let photoImage {
-                Image(uiImage: photoImage)
-                    .resizable()
-                    .scaledToFill()
-            } else if let symbol = log.schedule?.iconSymbol {
-                Image(systemName: symbol)
-                    .font(.title2)
-                    .foregroundColor(.accentColor)
-            } else {
-                Text(initial)
-                    .font(.headline).bold()
-                    .foregroundColor(.accentColor)
-            }
-        }
-        .frame(width: 56, height: 56)
-        .background(photoImage == nil ? Color(.secondarySystemBackground) : Color.clear)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-    }
-
-    private var initial: String {
-        guard let name = log.schedule?.name, let first = name.first else { return "M" }
-        return String(first).uppercased()
-    }
-
-    private var photoImage: UIImage? {
-        guard let data = log.schedule?.photoData else { return nil }
-        return UIImage(data: data)
-    }
     private var countdownColor: Color {
         switch urgency {
         case .normal: return Color.secondary

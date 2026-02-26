@@ -1,7 +1,3 @@
-//
-//  BreathingCircleView.swift
-//  vCare
-//
 
 import SwiftUI
 

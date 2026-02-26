@@ -1,7 +1,3 @@
-//
-//  MedicationEntity+CoreData.swift
-//  vCare
-//
 
 import CoreData
 

@@ -1,7 +1,3 @@
-//
-//  CareEntry.swift
-//  vCare
-//
 
 import CoreData
 import Foundation

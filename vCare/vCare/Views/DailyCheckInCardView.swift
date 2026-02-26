@@ -1,7 +1,3 @@
-//
-//  DailyCheckInCardView.swift
-//  vCare
-//
 
 import SwiftUI
 

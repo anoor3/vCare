@@ -1,9 +1,3 @@
-//
-//  vCareApp.swift
-//  vCare
-//
-//  Created by Abdullah Noor on 2/24/26.
-//
 
 import SwiftUI
 

@@ -1,7 +1,3 @@
-//
-//  InsightCardView.swift
-//  vCare
-//
 
 import SwiftUI
 
