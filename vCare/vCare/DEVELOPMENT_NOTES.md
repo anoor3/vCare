@@ -60,6 +60,11 @@
 ### Improvements & Next Steps
 - Consider animating section completion (confetti or check animation) when the last dose in a block is taken.
 - Feed calm session insights into this screen (e.g., highlight stress resets before evening meds) to encourage adherence.
+- Continue iterating on contrast/density by offering a compact mode for caregivers who prefer even simpler lists.
+- Skipping a dose now immediately recolors the row and shows a pause icon so the state change is obvious.
+- Added an "Undo" path for skipped doses so accidental taps are recoverable without digging into Manage.
+- Unified medication row backgrounds to a neutral card, using badges/icons for status so the list stays professional while still conveying state.
+- Introduced the timeline-based `NewMedicationsView` with `NextDoseHeroCard` and the redesigned `MedicationCardView`, collapsing empty blocks into chips so sparse days still feel intentional.
 
 ### Improvements & Next Steps
 - Consider surfacing a subtle “Manage” card below the adherence summary for quicker access, gated behind the same sheet to avoid clutter.

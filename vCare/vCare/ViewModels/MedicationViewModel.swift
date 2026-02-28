@@ -146,6 +146,10 @@ final class MedicationViewModel: ObservableObject {
         updateLog(logID: logID, newStatus: .skipped, takenAt: nil)
     }
 
+    func undoSkip(logID: UUID) {
+        updateLog(logID: logID, newStatus: .upcoming, takenAt: nil)
+    }
+
     func updateStatusesOnAppear() {
         handleDayChange()
         autoMarkMissedLogs()
@@ -318,6 +322,11 @@ final class MedicationViewModel: ObservableObject {
     }
 
     private func determineStatus(for entity: MedicationLogEntity, now: Date) -> MedicationLogStatus {
+        if let raw = entity.status,
+           let stored = MedicationLogStatus(rawValue: raw),
+           stored == .skipped {
+            return .skipped
+        }
         if entity.takenAt != nil {
             return .taken
         }
