@@ -102,5 +102,3 @@ vCare/
 - Persist Care Alerts in `CarePortalManager.createCareAlertIfNeeded` once cloud sync or push targets are defined.
 - Back your medication schedules with HealthKit or Reminders exports for better ecosystem integration.
 - Expand Settings with toggles for notification quiet hours, custom reminder sounds, or portal refresh intervals once `AppFeatures` grows beyond the single flag.
-
-Feel free to tailor the README and structure further as the app evolves—this document should give collaborators (or your future self) enough context to dive straight into the codebase.
