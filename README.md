@@ -1,6 +1,18 @@
 # vCare
 
-vCare is a SwiftUI companion for caregivers that blends mood journaling, medication adherence, and digestible analytics into a single iOS experience. The project shows how to pair Core Data driven state with modern platform APIs such as ActivityKit, UserNotifications, and CryptoKit.
+vCare is a calm, supportive companion designed for caregivers and families managing daily medication routines.
+Caring for someone — whether it’s a parent, grandparent, or child — often means tracking medications, watching mood changes, and trying to notice patterns before problems grow. vCare brings those responsibilities into one clear, gentle space.
+Instead of overwhelming dashboards, vCare focuses on what matters today:
+What needs to be taken
+What was missed
+How the person is feeling
+Whether trends show stability or concern
+The goal is simple: reduce stress, increase consistency, and give caregivers quiet confidence.
+
+vCare is a calm, supportive iOS companion designed to help caregivers manage daily medication routines with clarity and confidence.
+Caring for someone — whether it’s a parent, grandparent, child, or even yourself — often means remembering schedules, watching for mood changes, and trying to notice patterns before they become problems. That responsibility can feel heavy.
+vCare was built to reduce that burden.
+
 
 ## Product Overview
 - Daily care check-ins capture mood, energy, notes, and whether medication was taken through `DailyCheckInCardView` and `HomeViewModel`.
