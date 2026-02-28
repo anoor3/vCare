@@ -13,7 +13,7 @@ struct QuickActionsView: View {
                 actionButton(title: "Log Check-In", icon: "square.and.pencil", color: .blue, action: onLogCheckIn)
                 actionButton(title: "Add Medication", icon: "pills", color: .green, action: onAddMedication)
                 actionButton(title: "View Insights", icon: "chart.bar", color: .purple, action: onViewInsights)
-                actionButton(title: "Calm Mode", icon: "wind", color: .orange, action: onStartCalm)
+                actionButton(title: "Calm Moment", icon: "wind", color: .orange, action: onStartCalm)
             }
         }
     }

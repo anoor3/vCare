@@ -6,7 +6,8 @@ struct MedicationsView: View {
     @StateObject private var viewModel: MedicationViewModel
     @ObservedObject private var appState = AppState.shared
     @State private var showAddMedication = false
-    @State private var editingSchedule: MedicationSchedule?
+    @State private var showManageSchedules = false
+    @State private var scheduleToEdit: MedicationSchedule?
     @State private var showSchedule = false
     @State private var highlightedLogID: UUID?
 
@@ -111,9 +112,13 @@ struct MedicationsView: View {
         .background(Color(.systemGroupedBackground).ignoresSafeArea())
         .navigationTitle("Medications")
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button("Manage") {
+                    showManageSchedules = true
+                }
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
-                    editingSchedule = nil
                     showAddMedication = true
                 } label: {
                     Image(systemName: "plus")
@@ -121,12 +126,28 @@ struct MedicationsView: View {
             }
         }
         .sheet(isPresented: $showAddMedication, onDismiss: {
-            editingSchedule = nil
             viewModel.refresh()
         }) {
-            AddMedicationView(schedule: editingSchedule) { schedule in
+            AddMedicationView(schedule: nil) { schedule in
                 viewModel.saveSchedule(schedule)
             }
+        }
+        .sheet(item: $scheduleToEdit, onDismiss: {
+            viewModel.refresh()
+        }) { schedule in
+            AddMedicationView(schedule: schedule) { updated in
+                viewModel.saveSchedule(updated)
+            }
+        }
+        .sheet(isPresented: $showManageSchedules) {
+            ManageSchedulesView(viewModel: viewModel,
+                                 onEdit: { schedule in
+                                     showManageSchedules = false
+                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                                         scheduleToEdit = schedule
+                                     }
+                                 },
+                                 onClose: { showManageSchedules = false })
         }
         .onAppear { viewModel.updateStatusesOnAppear() }
     }

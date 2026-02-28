@@ -8,6 +8,9 @@ struct HomeView: View {
     @StateObject private var viewModel: HomeViewModel
     @ObservedObject private var appState = AppState.shared
     @State private var isCheckInExpanded = false
+    @State private var showCalmMoment = false
+    @AppStorage("calmSessionCount") private var calmSessionCount: Int = 0
+    @AppStorage("calmSessionLastDate") private var calmSessionLastDate: Double = 0
 
     init(context: NSManagedObjectContext, selectedTab: Binding<AppTab>) {
         self._selectedTab = selectedTab
@@ -44,8 +47,12 @@ struct HomeView: View {
                         },
                         onAddMedication: { selectedTab = .medications },
                         onViewInsights: { selectedTab = .insights },
-                        onStartCalm: { selectedTab = .reset }
+                        onStartCalm: { showCalmMoment = true }
                     )
+
+                    CalmStatusCardView(sessionCount: calmSessionCount,
+                                       lastSessionText: lastCalmSessionText,
+                                       onStart: { showCalmMoment = true })
 
                     DailyCheckInCardView(
                         isExpanded: $isCheckInExpanded,
@@ -68,6 +75,11 @@ struct HomeView: View {
         .animation(.easeInOut(duration: 0.25), value: heroStatus.headline)
         .refreshable { viewModel.refresh() }
         .onAppear { viewModel.refresh() }
+        .sheet(isPresented: $showCalmMoment) {
+            CalmMomentView(onDismiss: { showCalmMoment = false }) { date in
+                handleCalmSessionComplete(date: date)
+            }
+        }
     }
 
     private var premiumOwnerContent: some View {
@@ -114,6 +126,20 @@ struct HomeView: View {
         withAnimation(.easeInOut) {
             isCheckInExpanded = false
         }
+    }
+
+    private func handleCalmSessionComplete(date: Date) {
+        calmSessionCount += 1
+        calmSessionLastDate = date.timeIntervalSince1970
+        showCalmMoment = false
+    }
+
+    private var lastCalmSessionText: String {
+        guard calmSessionCount > 0 else { return "No sessions completed yet" }
+        let date = Date(timeIntervalSince1970: calmSessionLastDate)
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .short
+        return "Last session " + formatter.localizedString(for: date, relativeTo: Date())
     }
 
     private var heroStatus: HeroStatusData {
@@ -366,5 +392,57 @@ private struct OverviewCardView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .shadow(color: Color.black.opacity(0.05), radius: 16, y: 8)
+    }
+}
+
+private struct CalmStatusCardView: View {
+    var sessionCount: Int
+    var lastSessionText: String
+    var onStart: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Stress Reset")
+                        .font(.headline)
+                    Text(lastSessionText)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+                VStack {
+                    Text("\(sessionCount)")
+                        .font(.title2).bold()
+                    Text("Sessions")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Button(action: onStart) {
+                HStack {
+                    Image(systemName: "wind")
+                    Text("Start a Calm Moment")
+                        .fontWeight(.semibold)
+                    Spacer()
+                }
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(
+                    LinearGradient(colors: [Color(red: 0.78, green: 0.88, blue: 0.98),
+                                           Color(red: 0.8, green: 0.95, blue: 0.9)],
+                                   startPoint: .leading,
+                                   endPoint: .trailing)
+                )
+                .foregroundColor(.primary)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .shadow(color: Color.black.opacity(0.06), radius: 16, y: 8)
     }
 }

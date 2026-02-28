@@ -5,7 +5,6 @@ enum AppTab: Hashable {
     case home
     case medications
     case insights
-    case reset
     case settings
 }
 
@@ -38,14 +37,6 @@ struct ContentView: View {
                 Label("Insights", systemImage: "chart.line.uptrend.xyaxis")
             }
             .tag(AppTab.insights)
-
-            NavigationStack {
-                ResetView()
-            }
-            .tabItem {
-                Label("Calm", systemImage: "wind")
-            }
-            .tag(AppTab.reset)
 
             if AppFeatures.familyPortalEnabled {
                 NavigationStack {
