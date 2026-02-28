@@ -46,6 +46,21 @@
 - Immediate deletions felt risky without confirmation and the old list styling felt out of place compared to the rest of the app.
 - The previous implementation reused a boolean sheet with a nullable schedule, causing the first edit session to open blank because the initial `@State` values never reinitialized—fixed by separating “add new” and “edit existing” sheets.
 
+## 2024-04-08
+
+### What I Did
+- Overhauled the Medications tab UI: added a hero overview header summarizing taken/missed/upcoming doses with adherence %, plus an inline next-dose highlight card tied to the existing countdown logic.
+- Replaced the disclosure list with pastel section cards per time block (Morning/Afternoon/Evening) and built a richer `MedicationRowView` featuring icons, countdowns, and inline action buttons for taking or skipping doses.
+- Added a thoughtful empty state prompting users to add their first schedule and kept caregiver portal layouts untouched for clarity.
+
+### Mistakes / Issues Found
+- The prior layout buried key info inside a DisclosureGroup and small rows, making it hard to scan; the new structure surfaces the most important numbers immediately.
+- Row actions previously relied on swipe gestures only; now they have visible buttons and better feedback.
+
+### Improvements & Next Steps
+- Consider animating section completion (confetti or check animation) when the last dose in a block is taken.
+- Feed calm session insights into this screen (e.g., highlight stress resets before evening meds) to encourage adherence.
+
 ### Improvements & Next Steps
 - Consider surfacing a subtle “Manage” card below the adherence summary for quicker access, gated behind the same sheet to avoid clutter.
 - Add confirmation prompts or undo for deletions, especially once sharing or syncing is enabled.
