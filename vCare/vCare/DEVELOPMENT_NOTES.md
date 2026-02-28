@@ -64,7 +64,6 @@
 - Skipping a dose now immediately recolors the row and shows a pause icon so the state change is obvious.
 - Added an "Undo" path for skipped doses so accidental taps are recoverable without digging into Manage.
 - Unified medication row backgrounds to a neutral card, using badges/icons for status so the list stays professional while still conveying state.
-- Introduced the timeline-based `NewMedicationsView` with `NextDoseHeroCard` and the redesigned `MedicationCardView`, collapsing empty blocks into chips so sparse days still feel intentional.
 
 ### Improvements & Next Steps
 - Consider surfacing a subtle “Manage” card below the adherence summary for quicker access, gated behind the same sheet to avoid clutter.
